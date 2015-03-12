@@ -1,0 +1,15 @@
+{
+  "name": "scrobble2sonos",
+  "description": "Pipes a last.fm scrobble feed into your local Sonos.",
+  "version": "0.0.0",
+  "author": "Josh Everett",
+  "scripts": {
+    "start": "node scrobble2sonos.js"
+  },
+  "dependencies": {
+    "bluebird": "2.9.x",
+    "colors": "1.0.x",
+    "sonos": "0.8.x",
+    "underscore": "1.8.x"
+  }
+}
