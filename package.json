@@ -1,7 +1,7 @@
 {
   "name": "sonos2youtube",
   "description": "Plays YouTube videos for the current Sonos track.",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "Josh Everett",
   "scripts": {
     "start": "node index.js"
