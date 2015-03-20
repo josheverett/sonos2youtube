@@ -1,9 +1,11 @@
 var _ = require('underscore'),
+    Chrome = require('chrome-remote-interface'),
     colors = require('colors'),
     Promise = require('bluebird'),
     sonos = require('sonos'),
 
-    info, warn;
+    info, warn,
+    chrome, device;
 
 Promise.promisifyAll(sonos.Sonos.prototype);
 
@@ -32,15 +34,19 @@ function invoker (method /*, ...args */) {
 // Will show all devices but only resolve the first one that is actually
 // playing a track. This sonos node lib does not handle multiple devices
 // very well.
+// Points global `device` var to master device.
 function getFirstDevice () {
   var dfd = Promise.defer();
 
-  sonos.search(function (device) {
-    device.deviceDescription(function (err, desc) {
+  info('Searching for your Sonos system...');
+
+  sonos.search(function (instance) {
+    instance.deviceDescription(function (err, desc) {
       info('Sonos device found:', desc.friendlyName);
 
-      device.currentTrack(function (err, track) {
+      instance.currentTrack(function (err, track) {
         if (!isNaN(track.duration)) {
+          device = instance;
           info(desc.friendlyName, 'is the master device.');
           dfd.resolve(device);
         }
@@ -51,15 +57,37 @@ function getFirstDevice () {
   return dfd.promise;
 }
 
+// Find Chrome instance launched in remote debugger mode, set it up to take
+// navigation commands. Resolves when ready with instance.
+// Points global `chrome` var to instance.
+function findChrome () {
+  var dfd = Promise.defer();
+
+  info('Finding Chrome...');
+
+  Chrome(function (instance) {
+    chrome = instance;
+    chrome.Network.enable();
+    chrome.Page.enable();
+    chrome.once('ready', function () {
+      info('Chrome found!');
+      dfd.resolve(chrome);
+    });
+  });
+
+  return dfd.promise;
+}
+
 // Gogogogogogo
 
-info('Searching for your Sonos system...');
-
-getFirstDevice()
+findChrome()
+.then(getFirstDevice)
 .then(invoker('currentTrackAsync'))
-// .then(invoker('getZoneInfoAsync'))
 .then(function (track) {
   console.log(track);
+})
+.then(function () {
+  chrome.Page.navigate({ 'url': 'https://github.com' });
 })
 .catch(function (e) {
   warn('Ah crap something broke:');
