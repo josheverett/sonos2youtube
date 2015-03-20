@@ -11,3 +11,7 @@ Plays YouTube videos for the current Sonos track in Chrome.
 3. `$ npm install && npm start`
 
 4. Grab a beer.
+
+## License
+
+MIT
