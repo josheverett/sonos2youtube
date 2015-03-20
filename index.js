@@ -6,7 +6,7 @@ var _ = require('underscore'),
     youtubeSearch = require('youtube-search'),
 
     searchOpts = { maxResults: 1, startIndex: 1 },
-    pollInterval = 10000, // 10 seconds.
+    pollInterval = 1000, // 1 second.
 
     info, warn,
     chrome, device, currentTrack;
@@ -47,7 +47,7 @@ function getFirstDevice () {
 
   sonos.search(function (instance) {
     instance.deviceDescription(function (err, desc) {
-      info('Sonos device found:', desc.friendlyName);
+      debug('Sonos device found:', desc.friendlyName);
 
       instance.currentTrack(function (err, track) {
         if (!isNaN(track.duration)) {
@@ -106,6 +106,8 @@ function playYouTubeVideo () {
 }
 
 function checkCurrentTrack () {
+  //debug('Polling current track...');
+
   return device.currentTrackAsync()
     .then(function (track) {
       if (!track) {
@@ -117,6 +119,8 @@ function checkCurrentTrack () {
         return;
       }
 
+      info('New track!', track.title);
+
       // New track.
       currentTrack = track;
       playYouTubeVideo();
@@ -124,8 +128,10 @@ function checkCurrentTrack () {
 }
 
 function startTrackPoller () {
+  info('Starting track poller...');
+
   checkCurrentTrack();
-  setTimeout(checkCurrentTrack, pollInterval);
+  setInterval(checkCurrentTrack, pollInterval);
 }
 
 // Gogogogogogo
