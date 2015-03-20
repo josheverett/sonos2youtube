@@ -6,9 +6,10 @@ var _ = require('underscore'),
     youtubeSearch = require('youtube-search'),
 
     searchOpts = { maxResults: 1, startIndex: 1 },
+    pollInterval = 10000, // 10 seconds.
 
     info, warn,
-    chrome, device;
+    chrome, device, currentTrack;
 
 Promise.promisifyAll(sonos.Sonos.prototype);
 
@@ -93,24 +94,45 @@ function findChrome () {
   return dfd.promise;
 }
 
+function playYouTubeVideo () {
+  youtubeSearchAsync(currentTrack.artist + ' - ' + currentTrack.title)
+    .then(function (result) {
+      if (!result || !result.url) {
+        return warn('Could not find YouTube video for', currentTrack.title);
+      }
+
+      chrome.Page.navigate({ 'url': result.url });
+    });
+}
+
+function checkCurrentTrack () {
+  return device.currentTrackAsync()
+    .then(function (track) {
+      if (!track) {
+        return warn('Could not find current track!');
+      }
+
+      // Still same track.
+      if (currentTrack && track.title === currentTrack.title) {
+        return;
+      }
+
+      // New track.
+      currentTrack = track;
+      playYouTubeVideo();
+    });
+}
+
+function startTrackPoller () {
+  checkCurrentTrack();
+  setTimeout(checkCurrentTrack, pollInterval);
+}
+
 // Gogogogogogo
 
 findChrome()
 .then(getFirstDevice)
-.then(invoker('currentTrackAsync'))
-.then(function (track) {
-  console.log(track);
-})
-.then(function () {
-  chrome.Page.navigate({ 'url': 'https://github.com' });
-  setTimeout(function () {
-    chrome.Page.navigate({ 'url': 'https://google.com' });
-  }, 3000);
-})
-.then(youtubeSearchAsync.bind(this, "Get jiggy with it"))
-.then(function (ytResult) {
-  debug('ytResult:', ytResult);
-})
+.then(startTrackPoller)
 .catch(function (e) {
   warn('Ah crap something broke:');
   throw e;
