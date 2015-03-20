@@ -3,6 +3,9 @@ var _ = require('underscore'),
     colors = require('colors'),
     Promise = require('bluebird'),
     sonos = require('sonos'),
+    youtubeSearch = require('youtube-search'),
+
+    searchOpts = { maxResults: 1, startIndex: 1 },
 
     info, warn,
     chrome, device;
@@ -12,15 +15,16 @@ Promise.promisifyAll(sonos.Sonos.prototype);
 // Utils
 
 function log (color /*, ...args */) {
-  var strings = _.tail(arguments),
-      colored = _.map(strings, function (str) {
-        return str[color];
+  var args = _.tail(arguments),
+      colored = _.map(args, function (arg) {
+        return _.isString(arg) ? arg[color] : arg;
       });
 
   console.log.apply(console, colored);
 }
 
 info = log.bind(this, 'green');
+debug = log.bind(this, 'yellow');
 warn = log.bind(this, 'red');
 
 function invoker (method /*, ...args */) {
@@ -57,6 +61,17 @@ function getFirstDevice () {
   return dfd.promise;
 }
 
+// youtube-search doesn't like promisification. :|
+function youtubeSearchAsync (term) {
+  var dfd = Promise.defer();
+
+  youtubeSearch(term, searchOpts, function (err, results) {
+    dfd.resolve(!err && results && results[0]);
+  });
+
+  return dfd.promise;
+}
+
 // Find Chrome instance launched in remote debugger mode, set it up to take
 // navigation commands. Resolves when ready with instance.
 // Points global `chrome` var to instance.
@@ -88,6 +103,13 @@ findChrome()
 })
 .then(function () {
   chrome.Page.navigate({ 'url': 'https://github.com' });
+  setTimeout(function () {
+    chrome.Page.navigate({ 'url': 'https://google.com' });
+  }, 3000);
+})
+.then(youtubeSearchAsync.bind(this, "Get jiggy with it"))
+.then(function (ytResult) {
+  debug('ytResult:', ytResult);
 })
 .catch(function (e) {
   warn('Ah crap something broke:');
