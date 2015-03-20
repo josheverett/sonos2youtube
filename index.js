@@ -7,6 +7,7 @@ var _ = require('underscore'),
 
     searchOpts = { maxResults: 1, startIndex: 1 },
     pollInterval = 1000, // 1 second.
+    nyanCatVideo = 'https://www.youtube.com/watch?v=QH2-TGUlwu4',
 
     info, warn,
     chrome, device, currentTrack;
@@ -98,10 +99,15 @@ function playYouTubeVideo () {
   youtubeSearchAsync(currentTrack.artist + ' - ' + currentTrack.title)
     .then(function (result) {
       if (!result || !result.url) {
-        return warn('Could not find YouTube video for', currentTrack.title);
+        warn('Could not find YouTube video for', currentTrack.title);
+        info('NYAN CAT MOTHER FUCKERS!');
+        return nyanCatVideo;
       }
 
-      chrome.Page.navigate({ 'url': result.url });
+      return result.url;
+    })
+    .then(function (url) {
+      chrome.Page.navigate({ 'url': url });
     });
 }
 
