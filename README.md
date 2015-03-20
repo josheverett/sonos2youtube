@@ -1,7 +1,7 @@
-# scrobble2sonos
+# sonos2youtube
 
-Pipes a last.fm scrobble feed into your local Sonos.
+Plays YouTube videos for the current Sonos track.
 
 ## Usage
 
-`node scrobble2sonos --feed=<feed_url>`
+`npm start`

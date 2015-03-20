@@ -1,10 +1,10 @@
 {
-  "name": "scrobble2sonos",
-  "description": "Pipes a last.fm scrobble feed into your local Sonos.",
+  "name": "sonos2youtube",
+  "description": "Plays YouTube videos for the current Sonos track.",
   "version": "0.0.0",
   "author": "Josh Everett",
   "scripts": {
-    "start": "node scrobble2sonos.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "bluebird": "2.9.x",
