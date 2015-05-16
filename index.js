@@ -3,11 +3,15 @@ var _ = require('underscore'),
     colors = require('colors'),
     Promise = require('bluebird'),
     sonos = require('sonos'),
-    youtubeSearch = require('youtube-search'),
+    google = require('googleapis'),
+    youtube = google.youtube('v3'),
 
-    searchOpts = { maxResults: 1, startIndex: 1 },
-    pollInterval = 1000, // 1 second.
-    nyanCatVideo = 'https://www.youtube.com/watch?v=QH2-TGUlwu4',
+    argv = require('minimist')(process.argv.slice(2), {
+      default: {
+        pollInterval: 1000,
+        fallbackVideo: 'QH2-TGUlwu4'
+      }
+    }),
 
     info, warn,
     chrome, device, currentTrack;
@@ -63,12 +67,16 @@ function getFirstDevice () {
   return dfd.promise;
 }
 
-// youtube-search doesn't like promisification. :|
 function youtubeSearchAsync (term) {
-  var dfd = Promise.defer();
+  var params = {
+        key: argv.key,
+        part: 'snippet',
+        q: term
+      },
+      dfd = Promise.defer();
 
-  youtubeSearch(term, searchOpts, function (err, results) {
-    dfd.resolve(!err && results && results[0]);
+  youtube.search.list(params, function (err, resp) {
+    dfd.resolve(!err && resp && resp.items && resp.items[0]);
   });
 
   return dfd.promise;
@@ -96,18 +104,24 @@ function findChrome () {
 }
 
 function playYouTubeVideo () {
-  youtubeSearchAsync(currentTrack.artist + ' - ' + currentTrack.title)
+  var term = currentTrack.artist + ' - ' + currentTrack.title;
+
+  youtubeSearchAsync(term)
     .then(function (result) {
-      if (!result || !result.url) {
-        warn('Could not find YouTube video for', currentTrack.title);
-        info('NYAN CAT MOTHER FUCKERS!');
-        return nyanCatVideo;
+      var videoId = result && result.id && result.id.videoId;
+
+      if (!videoId) {
+        warn('Could not find YouTube video for', term);
+        info('Playing fallback video.');
+        return argv.fallbackVideo;
       }
 
-      return result.url;
+      return videoId;
     })
-    .then(function (url) {
-      chrome.Page.navigate({ 'url': url });
+    .then(function (videoId) {
+      chrome.Page.navigate({
+        'url': 'https://www.youtube.com/watch?v=' + videoId
+      });
     });
 }
 
@@ -137,7 +151,7 @@ function startTrackPoller () {
   info('Starting track poller...');
 
   checkCurrentTrack();
-  setInterval(checkCurrentTrack, pollInterval);
+  setInterval(checkCurrentTrack, argv.pollInterval);
 }
 
 // Gogogogogogo
